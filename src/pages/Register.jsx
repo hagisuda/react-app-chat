@@ -3,11 +3,13 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore"; 
 import { useState } from "react"
 import { auth, storage, db } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
 	const [err, setErr] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [message, setMessage] = useState('');
+	const naviagte = useNavigate();
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -45,11 +47,15 @@ export default function Register() {
 						email,
 						photoURL: downloadURL,
 					});
+					// Add empty user chat data to group chat feeds by the user id
+					await setDoc(doc(db, "user_chats", res.user.uid), {});
+					//Ridirect to home
+					naviagte("/");
 
 					//Clear form
-					e.target.reset();
-					setSuccess(true);
-					setMessage('Congrats! Registered successfully!');
+					// e.target.reset();
+					// setSuccess(true);
+					// setMessage('Congrats! Registered successfully!');
 				});
 			}
 			);
