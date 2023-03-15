@@ -6,6 +6,9 @@ import { auth, storage, db } from "../firebase";
 
 export default function Register() {
 	const [err, setErr] = useState(false);
+	const [success, setSuccess] = useState(false);
+	const [message, setMessage] = useState('');
+
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		const displayName = e.target[0].value;
@@ -15,19 +18,22 @@ export default function Register() {
 
 		try {
 			const res = await createUserWithEmailAndPassword(auth, email, password);
-			console.log(res);
 			const storageRef = ref(storage, displayName);
 
 			const uploadTask = uploadBytesResumable(storageRef, file);
 			uploadTask.on('state_changed', 
+			(snapshot) => {
+			}, 
 			(error) => {
 				setErr(true);
+				setMessage('Uploading profile image failed!');
+				console.log(error);
 			}, 
 			() => {
 				// Handle successful uploads on complete
 				// For instance, get the download URL: https://firebasestorage.googleapis.com/...
-				getDownloadURL(uploadTask.snapshot.ref).then( async (downloadURL) => {
-					console.log(downloadURL);
+				getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+					// Update profile's name and photo url, since we just added email and password while creating authentication
 					await updateProfile(res.user, {
 						displayName,
 						photoURL: downloadURL,
@@ -39,29 +45,36 @@ export default function Register() {
 						email,
 						photoURL: downloadURL,
 					});
+
+					//Clear form
+					e.target.reset();
+					setSuccess(true);
+					setMessage('Congrats! Registered successfully!');
 				});
 			}
 			);
-
-
-		} catch(err) {
+		} catch(error) {
+			//Email dupliation error
 			setErr(true);
+			setMessage('Email already in use!');
+			console.log(error);
 		}
 		
 	}
+
 	return (
 		<div className="formContainer">
 			<div className="formWrapper">
 				<span className="logo">Haky Chat</span>
 				<h1 className="title">Sign Up</h1>
-				<form onSubmit={handleSubmit}>
+				<form id="register_form" onSubmit={handleSubmit}>
 					<input type="username" placeholder="Enter your username" />
 					<input type="email" placeholder="Enter your email" />
 					<input type="password" placeholder="Enter your password" />
 					<input style={{display:"none"}} type="file" id="fileUpload" />
 					<label htmlFor="fileUpload">Upload file</label>
 					<button type="submit">Sign Up</button>
-					{err && <span>Something went wrong!!</span>}
+					{success && <span>{message}</span>}
 				</form>
 				<p className="comment">You do have an account? Login</p>
 			</div>
